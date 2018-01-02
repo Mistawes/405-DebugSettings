@@ -1,8 +1,9 @@
 /*****************************************************************
 *
-* ============== Kernel Dumper for 4.05 - WildCard ===============
+* ====== Debug Settings, UART & HexDump for 4.05 - Mistawes ======
 *
 *	Thanks to:
+*	-WildCard for the base of this source code.
 *	-Specter for his kernel exploit / Code Execution method
 *	-IDC for helping to understand things
 *	-Shadow for the copyout trick ;)
@@ -114,50 +115,7 @@ struct kpayload_args{
 	uint64_t user_arg;
 };
 
-struct kdump_args{
-    	uint64_t argArrayPtr;
-};
-
-
-int kdump(struct thread *td, struct kdump_args* args){
-
-	// hook our kernel functions
-	void* kernel_base = &((uint8_t*)__readmsr(0xC0000082))[-0x30EB30];
-
-	int (*printfkernel)(const char *fmt, ...) = (void *)(kernel_base + 0x347580);
-	int (*copyout)(const void *kaddr, void *uaddr, size_t len) = (void *)(kernel_base + 0x286d70);
-	void (*bzero)(void *b, size_t len) = (void *)(kernel_base + 0x286c30);
-	int (*copyin)(const void *uaddr, void *kaddr, size_t len) = (void *)(kernel_base + 0x286df0);
-
-
-	//printfkernel("\n\n\nHELLO FROM YOUR dumper =)\n\n\n");
-
-	uint64_t ubuf;
-	memcpy(&ubuf,&args[2],8);
-	printfkernel("kdump ubuf is:0x%016llx\n", ubuf);
-
-	uint64_t kaddr;
-	copyin(ubuf,&kaddr,8);
-	printfkernel("kdump kernel address is:0x%016llx\n", kaddr);
-
-	uint64_t uaddr;
-	copyin(ubuf + 8,&uaddr,8);
-	printfkernel("kdump userland buffer is at:0x%016llx\n", uaddr);
-
-
-	// run copyout into userland memory for the kaddr we specify
-	int cpRet = copyout(kaddr, uaddr , 0x1000);
-
-	// if mapping doesnt exist zero out that mem
-	if(cpRet == -1){
-		printfkernel("bzero at 0x%016llx\n", kaddr);
-		bzero(uaddr, 0x1000);
-		return cpRet;
-	}
-	
-	return cpRet;
-}
-
+// kdump woz 'ere
 
 int kpayload(struct thread *td, struct kpayload_args* args){
 
@@ -348,7 +306,7 @@ int _main(struct thread *td){
 
 	server.sin_len = sizeof(server);
 	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = IP(192, 168, 0, 28);
+	server.sin_addr.s_addr = IP(192, 168, 0, 22);
 	server.sin_port = sceNetHtons(9023);
 	memset(server.sin_zero, 0, sizeof(server.sin_zero));
 	int sock = sceNetSocket("debug", AF_INET, SOCK_STREAM, 0);
@@ -377,21 +335,7 @@ int _main(struct thread *td){
 	printfsocket("kernBase is:0x%016llx\n",kbase);
 	printfsocket("dump is:0x%016llx\n",dump);
 
-	// loop on our kdump payload 
-	
-	uint64_t pos = 0;
-
-	for(int i = 0; i < 26564; i++){
-		// dont ask
-		uint64_t array[2] = {kbase + pos, dump, 0xAA};
-	
-		// call our copyout wrapper and send the userland buffer over socket
-   		syscall(11,kdump,NULL,&array);
-		sceNetSend(sock,dump,0x1000,0);
-		pos = pos + 0x1000;
-	}
-
-
+	// kdump payload loop woz 'ere
 
 	free(dump);
 	sceNetSocketClose(sock);
