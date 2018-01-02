@@ -1,6 +1,6 @@
 /*****************************************************************
 *
-* ====== Debug Settings, UART & HexDump for 4.05 - Mistawes ======
+* ====== Debug Settings + UART for 4.05 - Mistawes ======
 *
 *	Thanks to:
 *	-WildCard for the base of this source code.
@@ -171,7 +171,7 @@ int kpayload(struct thread *td, struct kpayload_args* args){
 	*(uint16_t *)(kernel_base + 0X1FE5A2C) = 0x8101;
 	*(uint16_t *)(kernel_base + 0x200151C) = 0x8101;
 
-	// Say hello and put the kernel base in userland to we can use later
+	// Say hello and put the kernel base in userland so we can use later
 
 	printfkernel("\n\n\nHELLO FROM YOUR KERN DUDE =)\n\n\n");
 
@@ -187,111 +187,7 @@ int kpayload(struct thread *td, struct kpayload_args* args){
 	return 0;
 }
 
-// props to Hitodama for his hexdump function always nice to have near
-int hexDumpKern(const void *data, size_t size, uint64_t kernel_base){
-
-	unsigned char *d = (unsigned char *)data;
-	size_t consoleSize = 16;
-	char b[consoleSize + 3];
-	size_t i;
-
-	// hook kernel print for uart hex dumping
-	int (*printf)(const char *fmt, ...) = (void *)(kernel_base + 0x347580);
-
-	if(data == NULL){
-		return -1;
-		}
-	b[0] = '|';
-	b[consoleSize + 1] = '|';
-	b[consoleSize + 2] = '\0';
-	
-	printf("\n-------HEX DUMP------\n");
-	for (i = 0; i < size; i++)
-	{
-		if ((i % consoleSize) == 0)
-		{
-			if (i != 0){
-				printf("  %s\n", b);
-				}
-			printf("%016lx ", (unsigned char *)data + i);
-		}
-
-		if(i % consoleSize == 8)
-			printf(" ");
-		printf(" %02x", d[i]);
-
-		if (d[i] >= ' ' && d[i] <= '~')
-			b[i % consoleSize + 1] = d[i];
-
-		else
-			b[i % consoleSize + 1] = '.';
-		}
-
-		while((i % consoleSize) != 0)
-		{
-
-		if(i % consoleSize == 8)
-			printf("    ");
-	
-		else
-			printf("   ");
-			b[i % consoleSize + 1] = '.';
-			i++;
-		}
-
-		printf("  %s\n", b);
-		return 0;
-}
-
-// userland hexdump over socket
-int hexDump(const void *data, size_t size,int sock)
-{
-	unsigned char *d = (unsigned char *)data;
-	size_t consoleSize = 16;
-	char b[consoleSize + 3];
-	size_t i;
-
-	if(data == NULL){
-		return -1;
-		}
-	b[0] = '|';
-	b[consoleSize + 1] = '|';
-	b[consoleSize + 2] = '\0';
-	
-	printfsocket("\n-------HEX DUMP------\n");
-	for (i = 0; i < size; i++)
-	{
-		if ((i % consoleSize) == 0)
-		{
-			if (i != 0){
-				printfsocket("  %s\n", b);
-				}
-			printfsocket("%016lx ", (unsigned char *)data + i);
-		}
-
-		if(i % consoleSize == 8)
-			printfsocket(" ");
-		printfsocket(" %02x", d[i]);
-
-		if (d[i] >= ' ' && d[i] <= '~')
-			b[i % consoleSize + 1] = d[i];
-		else
-			b[i % consoleSize + 1] = '.';
-	}
-	while((i % consoleSize) != 0)
-	{
-		if(i % consoleSize == 8)
-			printfsocket("    ");
-		else
-			printfsocket("   ");
-		b[i % consoleSize + 1] = '.';
-		i++;
-	}
-	printfsocket("  %s\n", b);
-	return 0;
-}
-
-
+// HexDump woz 'ere
 
 int _main(struct thread *td){
 
