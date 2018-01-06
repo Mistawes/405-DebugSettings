@@ -1,6 +1,6 @@
 /*****************************************************************
 *
-* ====== Debug Settings + UART for 4.05 - Mistawes ======
+* =========== Debug Settings + UART for 4.05 - Mistawes ==========
 *
 *	Thanks to:
 *	-WildCard for the base of this source code.
